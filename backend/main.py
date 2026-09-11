@@ -39,7 +39,6 @@ app.add_middleware(
 @app.on_event("startup")
 def startup():
     init_db()
-    get_predictor()  # loads the model once, up front, instead of on first request
 
 
 os.makedirs(OVERLAY_DIR, exist_ok=True)
