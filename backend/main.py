@@ -11,24 +11,26 @@ Endpoints:
     GET  /overlays/{filename} -> serves the Grad-CAM overlay images
 """
 import os
+from pathlib import Path
 
 from fastapi import FastAPI, UploadFile, File, Form, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
-from database import init_db, get_db, Patient, Scan
-from predictor import get_predictor
-from schemas import PatientOut, PredictResponse
+from .database import init_db, get_db, Patient, Scan
+from .predictor import get_predictor
+from .schemas import PatientOut, PredictResponse
 
-OVERLAY_DIR = "storage/overlays"
+BASE_DIR = Path(__file__).resolve().parent
+OVERLAY_DIR = os.environ.get("OVERLAY_DIR", str(BASE_DIR / "storage" / "overlays"))
 
 app = FastAPI(title="RetinaCheck API")
 
-# Allow the React dev server (typically localhost:5173 or :3000) to call this API
+allowed_origins = os.environ.get("CORS_ORIGINS", "http://localhost:5173").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[origin.strip() for origin in allowed_origins if origin.strip()],
     allow_methods=["*"],
     allow_headers=["*"],
 )

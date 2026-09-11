@@ -8,6 +8,7 @@ import io
 import os
 import sys
 import uuid
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -39,7 +40,7 @@ class DRPredictor:
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
 
         self.model = build_model(num_classes=5, device=self.device)
-        self.model.load_state_dict(torch.load(checkpoint_path, map_location=self.device))
+        self.model.load_state_dict(torch.load(checkpoint_path, map_location=self.device, weights_only=True))
         self.model.eval()
 
         self.transform = get_transforms(size, train=False)
@@ -90,6 +91,8 @@ def get_predictor(checkpoint_path: str = None) -> DRPredictor:
     """Singleton accessor so the (slow-ish) model load only happens once."""
     global _predictor_instance
     if _predictor_instance is None:
-        checkpoint_path = checkpoint_path or os.environ.get("DR_CHECKPOINT_PATH", "best_model.pt")
+        checkpoint_path = checkpoint_path or os.environ.get(
+            "DR_CHECKPOINT_PATH", str(Path(__file__).resolve().parent / "best_model.pt")
+        )
         _predictor_instance = DRPredictor(checkpoint_path)
     return _predictor_instance

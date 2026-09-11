@@ -3,13 +3,17 @@ SQLite database for patients and their scan history, via SQLAlchemy.
 Creates dr_screening.db in the working directory on first run.
 """
 from datetime import datetime
+import os
+from pathlib import Path
 
 from sqlalchemy import create_engine, Column, String, Integer, Float, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 
-DATABASE_URL = "sqlite:///./dr_screening.db"
+BASE_DIR = Path(__file__).resolve().parent
+DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{BASE_DIR / 'dr_screening.db'}")
 
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+engine = create_engine(DATABASE_URL, connect_args=connect_args)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 

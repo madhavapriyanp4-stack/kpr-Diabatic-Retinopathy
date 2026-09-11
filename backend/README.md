@@ -18,8 +18,7 @@ project/
 ## Setup
 
 ```bash
-cd backend
-pip install -r requirements.txt
+pip install -r backend/requirements.txt
 ```
 
 Put your trained checkpoint (`best_model.pt`) in this `backend/` folder,
@@ -32,7 +31,7 @@ export DR_CHECKPOINT_PATH=/path/to/best_model.pt
 ## Run
 
 ```bash
-uvicorn main:app --reload --port 8000
+uvicorn backend.main:app --reload --port 8000
 ```
 
 First startup will take a few seconds while the model loads. Once
@@ -80,8 +79,31 @@ Returns:
   Holds patients and scan records.
 - `storage/overlays/` -- Grad-CAM overlay images, created automatically.
 
-Both are local files; fine for a demo/prototype, not meant for
-production multi-user deployment as-is.
+Both are local files. On Render, the default filesystem is ephemeral, so
+records and overlays can disappear after a redeploy or service restart.
+Use a Render persistent disk (paid service) or change `DATABASE_URL` to a
+managed PostgreSQL database and move overlays to object storage for durable
+production data.
+
+## Deploying to Render
+
+The repository includes `render.yaml`, which defines separate backend and
+frontend services.
+
+1. Push the repository to GitHub and create a new Render Blueprint from it.
+2. Deploy the `retinacheck-api` service first. Wait for `/health` to return
+  `{"status":"ok"}` and copy its public URL.
+3. On `retinacheck-frontend`, set `VITE_API_BASE_URL` to the backend URL,
+  without a trailing slash, for example `https://retinacheck-api.onrender.com`.
+4. Deploy the frontend and copy its public URL.
+5. On `retinacheck-api`, set `CORS_ORIGINS` to the frontend URL, without a
+  trailing slash, then redeploy the backend.
+6. Open the frontend URL, upload a scan, and verify that the result overlay
+  loads. The API docs are available at `<backend-url>/docs`.
+
+The model is loaded during backend startup. If the service runs out of memory,
+select a larger Render instance; CPU inference is supported, but each scan may
+take longer.
 
 ## Connecting the React frontend
 
